@@ -19,7 +19,7 @@ class FullyConnected(nn.Module):
         super(FullyConnected, self).__init__()
         self.in_dim = in_dim
         self.width = width
-        self.depth = depth
+        self.n_layers = n_layers
         self.bias = bias
         self.out_dim = out_dim
         

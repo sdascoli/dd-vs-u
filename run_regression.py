@@ -15,7 +15,7 @@ def create_script(params):
 #SBATCH --output={name}.out
 #SBATCH --job-name={name}
 
-python main.py --name {name} --noise {noise} --n {n} --seed {seed} --lr {lr} --d {d} --n_classes 1 --task regression
+python main.py --name {name} --noise {noise} --n {n} --seed {seed} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --epsilon {epsilon} --n_classes 1 --task regression --no_cuda True
 '''.format(**params)
     with open('{}.sbatch'.format(params['name']), 'w') as f:
         f.write(script)
@@ -37,7 +37,10 @@ if __name__ == '__main__':
             'lr' : [0.01],#np.logspace(-2,0,3).astype(int),
             'n' : [1,10,100],#np.logspace(1,3,10).astype(int),
             'd' : [1,10,100],
-            'seed' : range(1)
+            'seed' : [0],
+        'test_noise' : [False],
+        'loss_type' : ['mse'],
+        'epsilon' : [.01],
     }
 
     def dict_product(d):

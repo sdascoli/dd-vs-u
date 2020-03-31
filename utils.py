@@ -7,6 +7,26 @@ from torchvision import datasets, transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
+def hinge_regression(output, target, epsilon=.1, type='quadratic'):
+    power = 1 if type=='linear' else 2
+    delta = (output-target).abs()-epsilon
+    loss = torch.nn.functional.relu(delta)*delta.pow(power)
+    return loss.mean()
+
+def hinge_classification(output,target,epsilon=.5, type='quadratic'):
+    power = 1 if type=='linear' else 2
+    output_size=output.size(1)
+    if output_size==1:
+        target = 2*target.double()-1
+        print(target,output)
+        return 0.5*(epsilon-output*target).mean()
+    delta = torch.zeros(output.size(0))
+    for i,(out,tar) in enumerate(zip(output,target)):
+        tar = int(tar)
+        delta[i] = epsilon + torch.cat((out[:tar],out[tar+1:])).max() - out[tar]
+    loss = 0.5 * torch.nn.functional.relu(delta).pow(power).mean()
+    return loss
+    
 def get_data(task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None):
     with torch.no_grad():
         dataset = []
@@ -25,7 +45,7 @@ def get_data(task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None
         elif task=='regression':
             for i in range(n_batches):
                 x = torch.randn(bs,d)
-                y = teacher(x) + noise*torch.randn((bs,1))
+                y = teacher(x)+noise*torch.randn((bs,1))
                 dataset.append((x,y))
     return dataset
 
