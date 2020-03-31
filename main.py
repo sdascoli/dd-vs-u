@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--noise', default=0.1, type=float)
     parser.add_argument('--test_noise', default=True, type=bool)
     parser.add_argument('--d', default=2, type=int)
-    parser.add_argument('--var', default=.5, type=int)
+    parser.add_argument('--var', default=.5, type=float)
     parser.add_argument('--n_classes', default=None, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--mom', default=0.9, type=float)
@@ -76,6 +76,7 @@ if __name__ == '__main__':
     if args.no_cuda: device='cpu'
 
     if not args.n_classes: args.n_classes = 1 if args.task=='regression' else 2
+    if not args.loss_type: args.loss_type = 'mse' if args.task=='regression' else 'nll'
     if args.task=='classification':
         teacher = None
         if args.loss_type == 'linear_hinge':
@@ -117,7 +118,7 @@ if __name__ == '__main__':
         opt = torch.optim.SGD(student.parameters(), lr=args.lr, momentum=args.mom)
         train_loss = train(student, tr_data, crit, opt, args.epochs)
         test_loss, test_acc = test(student, te_data, crit, args.task)
-        print(test_loss, test_acc)
+        print(train_loss, test_loss, test_acc)
         train_losses.append(train_loss)
         test_losses.append(test_loss)
         test_accs.append(test_acc)

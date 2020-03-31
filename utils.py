@@ -32,14 +32,15 @@ def get_data(task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None
         dataset = []
         if task=='classification':
             for i in range(n_batches):
-                vectors = torch.ones(n_classes, d)   
-                for ivec, vector in enumerate(vectors):
-                    vectors[ivec] = rot(vector, 2*np.pi*ivec/n_classes)
+                vectors = torch.randn(n_classes, d)
+                if n_classes==2:
+                    vectors[0] = torch.ones(d)
+                    vectors[1] = -torch.ones(d)                    
                 labels = torch.randint(n_classes,(bs,))
                 x = torch.ones(bs,d)
                 y = torch.ones(bs)
                 for j, label in enumerate(labels):
-                    x[j] *= vectors[label] + var * torch.randn(d)
+                    x[j] = vectors[label] + var * torch.randn(d)
                     y[j] = label if np.random.random()>noise else np.random.randint(n_classes)           
                 dataset.append((x,y.long()))
         elif task=='regression':
