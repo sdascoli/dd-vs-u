@@ -67,7 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_classes', default=None, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--mom', default=0.9, type=float)
-    parser.add_argument('--bs', default=1000, type=int)
+    parser.add_argument('--bs', default=1000000, type=int)
     
     args = parser.parse_args()
     torch.manual_seed(args.seed)

@@ -35,11 +35,11 @@ if __name__ == '__main__':
     grid = {
             'noise' : np.logspace(-3,-1,5),
             'lr' : [0.01],#np.logspace(-2,0,3).astype(int),
-            'n' : [10,100,1000],#np.logspace(1,3,10).astype(int),
-            'd' : [10,100,1000],
+            'n' : [100,1000,10000],#np.logspace(1,3,10).astype(int),
+            'd' : [1,10,100],
             'seed' : range(5),
         'test_noise' : [False],
-        'loss_type' : ['mse', 'linear_hinge'],
+        'loss_type' : ['mse'],
         'epsilon' : [.01],
     }
 
