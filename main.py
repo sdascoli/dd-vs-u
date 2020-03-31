@@ -33,7 +33,8 @@ def test(model, te_data, crit, task):
             test_loss = crit(out, y).item()
             if task=='classification':
                 preds = out.max(1)[1]
-                test_acc = preds.eq(y).sum().item().float()/len(y)
+                test_acc = preds.eq(y).sum().float()/len(y)
+                test_acc = test_acc.item()
             else:
                 test_acc = 0
             break
@@ -63,7 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_noise', default=True, type=bool)
     parser.add_argument('--d', default=2, type=int)
     parser.add_argument('--var', default=.5, type=int)
-    parser.add_argument('--n_classes', default=1, type=int)
+    parser.add_argument('--n_classes', default=None, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--mom', default=0.9, type=float)
     parser.add_argument('--bs', default=1000, type=int)
@@ -74,6 +75,7 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if args.no_cuda: device='cpu'
 
+    if not args.n_classes: args.n_classes = 1 if args.task=='regression' else 2
     if args.task=='classification':
         teacher = None
         if args.loss_type == 'linear_hinge':
@@ -115,7 +117,7 @@ if __name__ == '__main__':
         opt = torch.optim.SGD(student.parameters(), lr=args.lr, momentum=args.mom)
         train_loss = train(student, tr_data, crit, opt, args.epochs)
         test_loss, test_acc = test(student, te_data, crit, args.task)
-        print(test_loss)
+        print(test_loss, test_acc)
         train_losses.append(train_loss)
         test_losses.append(test_loss)
         test_accs.append(test_acc)
