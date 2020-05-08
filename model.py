@@ -23,6 +23,11 @@ class FullyConnected(nn.Module):
         self.bias = bias
         self.out_dim = out_dim
         
+        if activation=='linear':
+            self.activation = nn.Identity()
+        if activation=='abs':
+            self.activation = nn.PReLU(init=-1)
+            self.activation.weight.requires_grad=False
         if activation=='relu':
             self.activation = nn.ReLU()
         elif activation=='tanh':

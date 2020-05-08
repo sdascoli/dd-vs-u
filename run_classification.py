@@ -10,14 +10,15 @@ from utils import copy_py, who_am_i
 
 def create_script(params):
     script = '''#!/bin/bash 
-#!/bin/bash
+#SBATCH --gres=gpu:1
+#SBATCH --mem=10GB
 #SBATCH --nodes=1
 #SBATCH --output={name}.out
 #SBATCH --job-name={name}
-#SBATCH --cpus-per-task={seed[1]}
+#SBATCH --cpus-per-task=3
 
 for ((i={seed[0]}; i<={seed[1]}; i++)); do
-python main.py --name {name} --noise {noise} --n {n} --seed $i --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --epsilon {epsilon} --var {var} --n_classes 2 --task classification --no_cuda True
+python main.py --name {name}-$i --noise {noise} --n {n} --seed $i --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 2 --task classification --no_cuda False
 done
 
 wait
@@ -39,14 +40,13 @@ if __name__ == '__main__':
 
     grid = {
             'noise' : [0,0.1,0.2,0.5],
-            'lr' : [0.01],#np.logspace(-2,0,3).astype(int),
+            'lr' : [0.001],#np.logspace(-2,0,3).astype(int),
             'n' : [100,1000,10000],#np.logspace(1,3,10).astype(int),
             'd' : [1,10,100],
-            'seed' : [(0,10)],
+            'seed' : [(0,2),(3,5)],
         'test_noise' : [False],
         'loss_type' : ['nll'],
-        'epsilon' : [.01],
-        'var' : [0.5,1],
+        'epochs' : [10000]
     }
 
     def dict_product(d):

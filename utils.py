@@ -27,25 +27,44 @@ def hinge_classification(output,target,epsilon=.5, type='quadratic'):
     loss = 0.5 * torch.nn.functional.relu(delta).pow(power).mean()
     return loss
     
-def get_data(task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None):
+def get_data(dataset, task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None, train=True):
+
+    print('hi')
+    if dataset=='random':
+        data = torch.randn(n_batches*bs)
+    else:
+        tr_dataset = eval('Fast'+dataset.upper())('~/data', train=True, download=True)
+        te_dataset = eval('Fast'+dataset.upper())('~/data', train=False, download=True)
+        tr_dataset, te_dataset = get_pca(tr_dataset, te_dataset, D, normalized = True)
+        data = tr_dataset.data if train else te_dataset.data
+        data = data*d**0.5/data.norm(dim=-1,keepdim=True)
+        
     with torch.no_grad():
         dataset = []
+        # if task=='classification':
+        #     for i in range(n_batches):
+        #         vectors = torch.randn(n_classes, d)
+        #         if n_classes==2:
+        #             vectors[0] = torch.ones(d)
+        #             vectors[1] = -torch.ones(d)                    
+        #         labels = torch.randint(n_classes,(bs,))
+        #         x = torch.ones(bs,d)
+        #         y = torch.ones(bs)
+        #         for j, label in enumerate(labels):
+        #             x[j] = vectors[label] + var * torch.randn(d)
+        #             y[j] = label if np.random.random()>noise else np.random.randint(n_classes)           
+        #         dataset.append((x,y.long()))
         if task=='classification':
             for i in range(n_batches):
-                vectors = torch.randn(n_classes, d)
-                if n_classes==2:
-                    vectors[0] = torch.ones(d)
-                    vectors[1] = -torch.ones(d)                    
-                labels = torch.randint(n_classes,(bs,))
-                x = torch.ones(bs,d)
-                y = torch.ones(bs)
-                for j, label in enumerate(labels):
-                    x[j] = vectors[label] + var * torch.randn(d)
-                    y[j] = label if np.random.random()>noise else np.random.randint(n_classes)           
+                x = data[i*bs:(i+1)*bs]
+                y = teacher(x).max(1)[1].squeeze()
+                for j in range(len(y)):
+                    if np.random.random()<noise:
+                        y[j]= np.random.randint(n_classes)
                 dataset.append((x,y.long()))
         elif task=='regression':
             for i in range(n_batches):
-                x = torch.randn(bs,d)
+                x = data[i*bs:(i+1)*bs]
                 y = teacher(x)+noise*torch.randn((bs,1))
                 dataset.append((x,y))
     return dataset
@@ -72,3 +91,48 @@ def copy_py(dst_folder):
         if f.endswith('.py'):
             shutil.copy2(f, dst_folder)
 
+class FastMNIST(datasets.MNIST):
+    def __init__(self, *args, **kwargs): 
+        super().__init__(*args, **kwargs)
+
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+
+        self.data = self.data.unsqueeze(1).float().div(255)
+        self.data = self.data.sub_(self.data.mean()).div_(self.data.std())
+        self.data, self.targets = self.data.to(self.device), self.targets.to(self.device)
+    def __getitem__(self, index):
+        img, target = self.data[index], self.targets[index]
+        return img, target, index
+
+class FastFashionMNIST(datasets.FashionMNIST):
+    def __init__(self, *args, **kwargs): 
+        super().__init__(*args, **kwargs)
+
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+
+        self.data = self.data.unsqueeze(1).float().div(255)
+        self.data = self.data.sub_(self.data.mean()).div_(self.data.std())
+        self.data, self.targets = self.data.to(self.device), self.targets.to(self.device)
+    def __getitem__(self, index):
+        img, target = self.data[index], self.targets[index]
+        return img, target, index
+    
+class FastCIFAR10(datasets.CIFAR10):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+        self.data = torch.from_numpy(self.data).float().div(255)
+        self.data = self.data.sub_(self.data.mean()).div_(self.data.std())
+        self.data, self.targets = self.data.to(self.device), torch.LongTensor(self.targets).to(self.device)
+    def __getitem__(self, index):
+        img, target = self.data[index], self.targets[index]
+        return img, target, index
