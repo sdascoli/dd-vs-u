@@ -29,13 +29,12 @@ def hinge_classification(output,target,epsilon=.5, type='quadratic'):
     
 def get_data(dataset, task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None, train=True):
 
-    print('hi')
     if dataset=='random':
-        data = torch.randn(n_batches*bs)
+        data = torch.randn(n_batches*bs, d)
     else:
         tr_dataset = eval('Fast'+dataset.upper())('~/data', train=True, download=True)
         te_dataset = eval('Fast'+dataset.upper())('~/data', train=False, download=True)
-        tr_dataset, te_dataset = get_pca(tr_dataset, te_dataset, D, normalized = True)
+        tr_dataset, te_dataset = get_pca(tr_dataset, te_dataset, d, normalized = True)
         data = tr_dataset.data if train else te_dataset.data
         data = data*d**0.5/data.norm(dim=-1,keepdim=True)
         
@@ -136,3 +135,22 @@ class FastCIFAR10(datasets.CIFAR10):
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
         return img, target, index
+
+def get_pca(tr_data, te_data, input_size, normalized = True):
+    device = tr_data.device
+    
+    tr_data.data = tr_data.data.view(tr_data.data.size(0),-1)
+    te_data.data = te_data.data.view(te_data.data.size(0),-1)
+    x = tr_data.data.cpu()
+    # DATA IS ALREADY NORMALIZED
+    # m = x.mean(0).expand_as(x)
+    # u,s,v = torch.svd(torch.t(x-m))
+    u,s,v = torch.svd(torch.t(x))
+    if normalized:
+        tr_data.data = (tr_data.data) @ u[:, :input_size].to(device) / s[:input_size].to(device) ** 0.5
+        te_data.data = (te_data.data) @ u[:, :input_size].to(device) / s[:input_size].to(device) ** 0.5
+    else:
+        tr_data.data = (tr_data.data) @ u[:, :input_size].to(device).to(device) ** 0.5
+        te_data.data = (te_data.data) @ u[:, :input_size].to(device).to(device) ** 0.5
+
+    return tr_data, te_data

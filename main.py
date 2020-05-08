@@ -130,7 +130,7 @@ if __name__ == '__main__':
     n_batches = int(args.n/bs)
     tr_data = get_data(args.dataset, args.task, n_batches, bs, args.d, args.noise, n_classes=args.n_classes,  var=args.var, teacher=teacher)
     test_noise = args.noise if args.test_noise else 0
-    te_data = get_data(args.task, 1, args.n_test, args.d, test_noise, n_classes=args.n_classes, var=args.var, teacher=teacher)
+    te_data = get_data(args.dataset, args.task, 1, args.n_test, args.d, test_noise, n_classes=args.n_classes, var=args.var, teacher=teacher)
 
     tr_losses = []
     te_losses  = []
