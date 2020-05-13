@@ -2,6 +2,7 @@ import os
 import time
 import subprocess
 import itertools
+import collections
 import argparse
 import torch
 import numpy as np
@@ -15,13 +16,10 @@ def create_script(params):
 #SBATCH --nodes=1
 #SBATCH --output={name}.out
 #SBATCH --job-name={name}
-#SBATCH --cpus-per-task=3
+#SBATCH --cpus-per-task=1
+ulimit -n 64000
 
-for ((i={seed[0]}; i<={seed[1]}; i++)); do
-python main.py --name {name}-$i --noise {noise} --n {n} --seed $i --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 2 --task classification --no_cuda False
-done
-
-wait
+python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --no_cuda False --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
 '''.format(**params)
     with open('{}.sbatch'.format(params['name']), 'w') as f:
         f.write(script)
@@ -38,16 +36,22 @@ if __name__ == '__main__':
     copy_py(exp_dir) 
     os.chdir(exp_dir)
 
-    grid = {
-            'noise' : [0,0.1,0.2,0.5],
-            'lr' : [0.001],#np.logspace(-2,0,3).astype(int),
-            'n' : [100,1000,10000],#np.logspace(1,3,10).astype(int),
-            'd' : [1,10,100],
-            'seed' : [(0,2),(3,5)],
+    widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
+    grid = collections.OrderedDict({
+        'width' : widths,
+        'depth': [1,2]
+        'wd' : [0., 0.05],
+        'activation' : ['relu', 'tanh'],
+        'dataset' : ['random','MNIST'],
+        'noise' : [0,0.5,5],
+        'lr' : [0.001],
+        'd' : [14*14],
+        'num_seeds' : [10],
         'test_noise' : [False],
-        'loss_type' : ['nll'],
-        'epochs' : [10000]
-    }
+        'loss_type' : ['mse'],
+        'epochs' : [1000],
+        'n' : np.logspace(1,5,20).astype(int),
+    })
 
     def dict_product(d):
         keys = d.keys()
@@ -55,7 +59,6 @@ if __name__ == '__main__':
             yield dict(zip(keys, element))
 
     for i, params in enumerate(dict_product(grid)):
-        # params['name'] = '{noise:.2f}_{n:.2f}_{d:.2f}_{}'.format(**params)
         torch.save(grid, 'params.pkl')
         params['name'] = '{:06d}'.format(i)
         create_script(params)

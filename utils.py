@@ -3,7 +3,7 @@ import os
 import shutil
 import math
 import torch
-from torchvision import datasets, transforms
+import torchvision
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
@@ -27,19 +27,29 @@ def hinge_classification(output,target,epsilon=.5, type='quadratic'):
     loss = 0.5 * torch.nn.functional.relu(delta).pow(power).mean()
     return loss
     
+def normalize(x):
+    mean = x.mean(dim=0, keepdim=True)
+    std = x.std(dim=0, keepdim=True)
+    std[std==0]=1
+    return (x-mean)/std
+
 def get_data(dataset, task, n_batches, bs, d, noise, var=.5, n_classes=None, teacher=None, train=True):
 
+    n = n_batches*bs
     if dataset=='random':
-        data = torch.randn(n_batches*bs, d)
+        data = torch.randn(n, d)
     else:
-        tr_dataset = eval('Fast'+dataset.upper())('~/data', train=True, download=True)
-        te_dataset = eval('Fast'+dataset.upper())('~/data', train=False, download=True)
-        tr_dataset, te_dataset = get_pca(tr_dataset, te_dataset, d, normalized = True)
-        data = tr_dataset.data if train else te_dataset.data
-        data = data*d**0.5/data.norm(dim=-1,keepdim=True)
+        assert d**0.5 == int(d**0.5)
+        transforms = torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(int(d**0.5)), 
+                    torchvision.transforms.ToTensor()]) 
+        dataset = getattr(torchvision.datasets, dataset.upper())('~/data', train=train, download=True, transform=transforms)
+        data = normalize(torch.cat([dataset[mu][0] for mu in range(n)]).view(n,d))
+    data = data*d**0.5/data.norm(dim=-1,keepdim=True)
         
     with torch.no_grad():
         dataset = []
+        # Gaussian Mixture
         # if task=='classification':
         #     for i in range(n_batches):
         #         vectors = torch.randn(n_classes, d)
@@ -90,7 +100,7 @@ def copy_py(dst_folder):
         if f.endswith('.py'):
             shutil.copy2(f, dst_folder)
 
-class FastMNIST(datasets.MNIST):
+class FastMNIST(torchvision.datasets.MNIST):
     def __init__(self, *args, **kwargs): 
         super().__init__(*args, **kwargs)
 
@@ -106,7 +116,7 @@ class FastMNIST(datasets.MNIST):
         img, target = self.data[index], self.targets[index]
         return img, target, index
 
-class FastFashionMNIST(datasets.FashionMNIST):
+class FastFashionMNIST(torchvision.datasets.FashionMNIST):
     def __init__(self, *args, **kwargs): 
         super().__init__(*args, **kwargs)
 
@@ -122,7 +132,7 @@ class FastFashionMNIST(datasets.FashionMNIST):
         img, target = self.data[index], self.targets[index]
         return img, target, index
     
-class FastCIFAR10(datasets.CIFAR10):
+class FastCIFAR10(torchvision.datasets.CIFAR10):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if torch.cuda.is_available():

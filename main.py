@@ -71,7 +71,6 @@ if __name__ == '__main__':
     parser.add_argument('--task', default='classification', type=str)
     parser.add_argument('--dataset', default='random', type=str)
     parser.add_argument('--loss_type', default='default', type=str)
-    parser.add_argument('--epsilon', default=.1, type=float)
 
     parser.add_argument('--depth', default=1, type=int)
     parser.add_argument('--teacher_width', default=100, type=int)
@@ -80,12 +79,11 @@ if __name__ == '__main__':
     parser.add_argument('--activation', default='relu', type=str)
     
     parser.add_argument('--epochs', default=1000, type=int)
+    parser.add_argument('--d', default=2, type=int)
     parser.add_argument('--n', default=100, type=int)
     parser.add_argument('--n_test', default=1000, type=int)
     parser.add_argument('--noise', default=0.1, type=float)
     parser.add_argument('--test_noise', default=True, type=bool)
-    parser.add_argument('--d', default=2, type=int)
-    parser.add_argument('--var', default=.5, type=float)
     parser.add_argument('--n_classes', default=None, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--mom', default=0.9, type=float)
@@ -102,9 +100,9 @@ if __name__ == '__main__':
     
     if args.task=='classification':
         if args.loss_type == 'linear_hinge':
-            crit = lambda x,y : hinge_classification(x,y, epsilon=args.epsilon, type='linear')
+            crit = lambda x,y : hinge_classification(x,y, type='linear')
         elif args.loss_type == 'quadratic_hinge':
-            crit = lambda x,y : hinge_classification(x,y, epsilon=args.epsilon, type='quadratic')
+            crit = lambda x,y : hinge_classification(x,y, type='quadratic')
         elif args.loss_type == 'nll':
             crit = nn.CrossEntropyLoss()
         else:
@@ -128,9 +126,9 @@ if __name__ == '__main__':
 
     bs = min(args.bs, args.n)
     n_batches = int(args.n/bs)
-    tr_data = get_data(args.dataset, args.task, n_batches, bs, args.d, args.noise, n_classes=args.n_classes,  var=args.var, teacher=teacher)
+    tr_data = get_data(args.dataset, args.task, n_batches, bs, args.d, args.noise, n_classes=args.n_classes, teacher=teacher)
     test_noise = args.noise if args.test_noise else 0
-    te_data = get_data(args.dataset, args.task, 1, args.n_test, args.d, test_noise, n_classes=args.n_classes, var=args.var, teacher=teacher)
+    te_data = get_data(args.dataset, args.task, 1, args.n_test, args.d, test_noise, n_classes=args.n_classes, teacher=teacher)
 
     tr_losses = []
     te_losses  = []
