@@ -19,15 +19,15 @@ if ex.cluster == "slurm":
 else:
     print(f"!!! Slurm executable `srun` not found. Will execute jobs on '{ex.cluster}'")
 
-widths = np.unique(np.logspace(0, 2.5, 15).astype(int))
-ns = np.logspace(1,5,15).astype(int)
+widths = np.unique(np.logspace(0, 3, 20).astype(int))
+ns = np.logspace(0,5,20).astype(int)
 grid = collections.OrderedDict({
         'width' : widths,
         'n': ns,
         'depth': [2],
-        'wd' : [0., 0.1],
+        'wd' : [0],
         'activation' : ['tanh'],
-        'dataset' : ['random'],
+        'dataset' : ['MNIST'],
         'noise' : [0,0.5,5],
         'lr' : [0.001],
         'mom' : [0.],
@@ -35,7 +35,7 @@ grid = collections.OrderedDict({
         'num_seeds' : [10],
         'test_noise' : [False],
         'loss_type' : ['mse'],
-        'epochs' : [10000],
+        'epochs' : [1000],
     'no_cuda' : [False],
     'teacher_depth' : [2],
     'teacher_width' : [100],
@@ -54,7 +54,7 @@ def dict_product(d):
 
 torch.save(grid, folder + '/params.pkl')
 
-ex.update_parameters(mem_gb=10, nodes=1, tasks_per_node=80, cpus_per_task=1, gpus_per_node=8, timeout_min=1440, slurm_partition='learnfair')
+ex.update_parameters(mem_gb=10, nodes=1, cpus_per_task=1, gpus_per_node=8, timeout_min=3000, slurm_partition='learnfair')
 jobs = []
 with ex.batch():
     for i, params in enumerate(dict_product(grid)):

@@ -17,7 +17,7 @@ def create_script(params):
 #SBATCH --output={name}.out
 #SBATCH --job-name={name}
 #SBATCH --cpus-per-task=1
-ulimit -n 64000
+#SBATCH --partition=learnfair
 
 python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --no_cuda False --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
 '''.format(**params)
@@ -36,10 +36,12 @@ if __name__ == '__main__':
     copy_py(exp_dir) 
     os.chdir(exp_dir)
 
-    widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
+    widths = np.unique(np.logspace(0, 2.5, 2).astype(int))
+    ns = np.logspace(1,5,2).astype(int)
     grid = collections.OrderedDict({
         'width' : widths,
-        'depth': [1,2]
+        'n': ns,
+        'depth': [1,2],
         'wd' : [0., 0.05],
         'activation' : ['relu', 'tanh'],
         'dataset' : ['random','MNIST'],
@@ -50,7 +52,6 @@ if __name__ == '__main__':
         'test_noise' : [False],
         'loss_type' : ['mse'],
         'epochs' : [1000],
-        'n' : np.logspace(1,5,20).astype(int),
     })
 
     def dict_product(d):
@@ -59,6 +60,7 @@ if __name__ == '__main__':
             yield dict(zip(keys, element))
 
     for i, params in enumerate(dict_product(grid)):
+        if i>10: break
         torch.save(grid, 'params.pkl')
         params['name'] = '{:06d}'.format(i)
         create_script(params)
